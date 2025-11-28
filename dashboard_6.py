@@ -46,7 +46,8 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🏆 Hotel Popularity Score"
 ])
 
-# ====================================== TAB 1: Hotel Scores
+
+# ====================================== TAB 1 
 with tab1:
     st.header("Hotel Scores")
     figs = []
@@ -70,13 +71,12 @@ with tab1:
                        x='Hotel Name', y='Total Number of Reviews Reviewer Has Given',
                        text_auto=True, title="Top 20 Hotels by Reviewer Activity").update_layout(xaxis_tickangle=-45))
 
-
     figs.append(px.bar(df.groupby('Room Type Category')['Average Score'].mean().reset_index(),
                        x='Room Type Category', y='Average Score', text_auto=True,
                        title="Average Score by Room Type Category"))
 
     figs.append(px.bar(df.groupby('City')['Average Score'].mean().reset_index()
-                       .sort_values('Average Score', ascending=False),
+                       .sort_values('Average Score', ascending=False).head(20),
                        x='City', y='Average Score', text_auto=True,
                        title="Top Cities by Average Score"))
 
@@ -94,15 +94,17 @@ with tab1:
 
     total_charts = len(figs)
     charts_per_row = 3
+    chart_id = 0
     for start in range(0, total_charts, charts_per_row):
         row = st.columns(charts_per_row)
         for i in range(charts_per_row):
             if start + i < total_charts:
-                row[i].plotly_chart(figs[start + i], use_container_width=True)
+                row[i].plotly_chart(figs[start + i], use_container_width=True, key=f"tab1_chart_{chart_id}")
+                chart_id += 1
 
-    st.plotly_chart(f_month1, use_container_width=True)
+    st.plotly_chart(f_month1, use_container_width=True, key="tab1_month_avg")
 
-# ====================================== TAB 2: Sentiment Analysis
+# ====================================== TAB 2 
 with tab2:
     st.header("Sentiment Analysis")
     figs = []
@@ -116,16 +118,15 @@ with tab2:
                        title="Average Score per Sentiment"))
 
     figs.append(px.bar(df.groupby(['City', 'Sentiment Label']).size().reset_index(name='Count')
-                       .sort_values('Count', ascending=False),
+                       .sort_values('Count', ascending=False).head(20),
                        x='City', y='Count', text_auto=True, color='Sentiment Label',
                        title="Top Cities by Sentiment Count"))
 
     figs.append(px.line(df.groupby(['Review Year', 'Sentiment Label']).size().reset_index(name='Count'),
                         x='Review Year', y='Count', color='Sentiment Label',
-                        markers=True, title="Sentiment Trend Over Years").update_xaxes(type='category')
-                        )
-# ========
-    top_hotels = df['Hotel Name'].value_counts().head(50).index.tolist() 
+                        markers=True, title="Sentiment Trend Over Years").update_xaxes(type='category'))
+
+    top_hotels = df['Hotel Name'].value_counts().head(50).index.tolist()
     figs.append(px.sunburst(df[df['Hotel Name'].isin(top_hotels)],
                             path=['Sentiment Label', 'City', 'Hotel Name'],
                             title="Sentiment > City > Hotel Breakdown"))
@@ -135,20 +136,17 @@ with tab2:
     figs.append(px.bar(sentiment_ratio, x='Sentiment', y='Percentage', text_auto=True,
                        title="Sentiment Percentage Ratio (%)"))
 
-    monthly_sent_total = df['Review Month'].value_counts().reindex(range(1, 13), fill_value=0).reset_index()
-    monthly_sent_total.columns = ['Review Month', 'Count']
-    f_month2 = px.bar(monthly_sent_total, x='Review Month', y='Count',
-                      text_auto=True, title="Sentiment Count per Month")
-
     figs = fill_month_insights(figs, 9, [f_month2])
 
     total_charts = len(figs)
     charts_per_row = 3
+    chart_id = 0
     for start in range(0, total_charts, charts_per_row):
         row = st.columns(charts_per_row)
         for i in range(charts_per_row):
             if start + i < total_charts:
-                row[i].plotly_chart(figs[start + i], use_container_width=True)
+                row[i].plotly_chart(figs[start + i], use_container_width=True, key=f"tab2_chart_{chart_id}")
+                chart_id += 1
 
     avg_h_sent = df.groupby(['Hotel Name', 'Sentiment Label'])['Average Score'].mean().reset_index()
     top_h = avg_h_sent.groupby('Hotel Name')['Average Score'].mean().sort_values(ascending=False).head(40).index
@@ -156,14 +154,14 @@ with tab2:
                               x='Hotel Name', y='Average Score', color='Sentiment Label',
                               title="Avg Score per Sentiment for Top Hotels")
     top_hotels_chart.update_layout(xaxis_tickangle=-45)
-    st.plotly_chart(top_hotels_chart, use_container_width=True)
+    st.plotly_chart(top_hotels_chart, use_container_width=True, key="tab2_top_hotels")
 
     monthly_sent = df.groupby(['Review Month', 'Sentiment Label']).size().reset_index(name='Count')
     monthly_sent_chart = px.line(monthly_sent, x='Review Month', y='Count', color='Sentiment Label',
                                  title="Monthly Sentiment Trend", markers=True)
-    st.plotly_chart(monthly_sent_chart, use_container_width=True)
+    st.plotly_chart(monthly_sent_chart, use_container_width=True, key="tab2_month_sent")
 
-# ====================================== TAB 3: City Analysis
+# ====================================== TAB 3 
 with tab3:
     st.header("City Analysis")
     figs = []
@@ -174,8 +172,8 @@ with tab3:
 
     city_counts = df['City'].value_counts().reset_index()
     city_counts.columns = ['City', 'Count']
-    figs.append(px.histogram(city_counts, x='City', y='Count',
-                             title="Histogram of City Review Counts"))
+    figs.append(px.histogram(city_counts, x='City', y='Count', text_auto=True,
+                             title="City Review Counts"))
 
     city_stats = df.groupby('City')['Average Score'].agg(['mean', 'std']).reset_index()
     city_stats = city_stats.sort_values('mean', ascending=False).head(20)
@@ -195,8 +193,8 @@ with tab3:
                        x='City', y='Total Number of Reviews Reviewer Has Given',
                        text_auto=True, title="Avg Reviewer Activity per City").update_layout(xaxis_tickangle=-45))
 
-    figs.append(px.pie(city_counts.head(10), names='City', values='Count',
-                       hole=0.3, title="Top 10 Cities by Review Share"))
+    figs.append(px.pie(city_counts, names='City', values='Count',
+                       hole=0.3, title="Top Cities by Review Share"))
 
     monthly_city_cnt = df['Review Month'].value_counts().reindex(range(1, 13), fill_value=0).reset_index()
     monthly_city_cnt.columns = ['Review Month', 'Count']
@@ -207,19 +205,21 @@ with tab3:
 
     total_charts = len(figs)
     charts_per_row = 3
+    chart_id = 0
     for start in range(0, total_charts, charts_per_row):
         row = st.columns(charts_per_row)
         for i in range(charts_per_row):
             if start + i < total_charts:
-                row[i].plotly_chart(figs[start + i], use_container_width=True)
+                row[i].plotly_chart(figs[start + i], use_container_width=True, key=f"tab3_chart_{chart_id}")
+                chart_id += 1
 
     monthly_city = df.groupby('Review Month')['Average Score'].mean().reindex(range(1, 13), fill_value=0).reset_index()
     monthly_city.columns = ['Review Month', 'Average Score']
     f_month1 = px.line(monthly_city, x='Review Month', y='Average Score',
                        title="Monthly City Avg Score Trend", markers=True)
-    st.plotly_chart(f_month1, use_container_width=True)
+    st.plotly_chart(f_month1, use_container_width=True, key="tab3_month_avg")
 
-# ====================================== TAB 4: Hotel Popularity Score
+# ====================================== TAB 4 
 with tab4:
     st.header("🏆 Hotel Popularity Score")
     figs = []
@@ -244,20 +244,23 @@ with tab4:
 
     total_charts = len(figs)
     charts_per_row = 3
+    chart_id = 0
     for start in range(0, total_charts, charts_per_row):
         row = st.columns(charts_per_row)
         for i in range(charts_per_row):
             if start + i < total_charts:
-                row[i].plotly_chart(figs[start + i], use_container_width=True)
+                row[i].plotly_chart(figs[start + i], use_container_width=True, key=f"tab4_chart_{chart_id}")
+                chart_id += 1
 
     popularity_bar = px.bar(top20(df, 'Hotel Name', 'Hotel Popularity Score'),
                              x='Hotel Name', y='Hotel Popularity Score',
                              text_auto=True,
                              title="Popularity Score by Hotel")
-    st.plotly_chart(popularity_bar, use_container_width=True)
+    st.plotly_chart(popularity_bar, use_container_width=True, key="tab4_popularity_bar")
 
     monthly_pop = df.groupby('Review Month')['Hotel Popularity Score'].mean().reindex(range(1, 13), fill_value=0).reset_index()
     monthly_pop.columns = ['Review Month', 'Hotel Popularity Score']
     f_month1 = px.line(monthly_pop, x='Review Month', y='Hotel Popularity Score',
                        title="Monthly Popularity Trend", markers=True)
-    st.plotly_chart(f_month1, use_container_width=True)
+    st.plotly_chart(f_month1, use_container_width=True, key="tab4_popularity_month")
+
