@@ -70,16 +70,13 @@ with tab1:
                        x='Hotel Name', y='Total Number of Reviews Reviewer Has Given',
                        text_auto=True, title="Top 20 Hotels by Reviewer Activity").update_layout(xaxis_tickangle=-45))
 
-    figs.append(px.bar(top20(df, 'Hotel Name', 'Average Score', 'sum'),
-                       x='Hotel Name', y='Average Score',
-                       text_auto=True, title="Total Score for Top 20 Hotels"))
 
     figs.append(px.bar(df.groupby('Room Type Category')['Average Score'].mean().reset_index(),
                        x='Room Type Category', y='Average Score', text_auto=True,
                        title="Average Score by Room Type Category"))
 
     figs.append(px.bar(df.groupby('City')['Average Score'].mean().reset_index()
-                       .sort_values('Average Score', ascending=False).head(20),
+                       .sort_values('Average Score', ascending=False),
                        x='City', y='Average Score', text_auto=True,
                        title="Top Cities by Average Score"))
 
@@ -119,7 +116,7 @@ with tab2:
                        title="Average Score per Sentiment"))
 
     figs.append(px.bar(df.groupby(['City', 'Sentiment Label']).size().reset_index(name='Count')
-                       .sort_values('Count', ascending=False).head(20),
+                       .sort_values('Count', ascending=False),
                        x='City', y='Count', text_auto=True, color='Sentiment Label',
                        title="Top Cities by Sentiment Count"))
 
@@ -243,10 +240,6 @@ with tab4:
                        x='Hotel Name', y='Hotel Popularity Score', text_auto=True,
                        title="Top 20 Hotels by Total Popularity Score (SUM)").update_layout(xaxis_tickangle=-45))
 
-    monthly_pop_cnt = df['Review Month'].value_counts().reindex(range(1, 13), fill_value=0).reset_index()
-    monthly_pop_cnt.columns = ['Review Month', 'Count']
-    f_month2 = px.bar(monthly_pop_cnt, x='Review Month', y='Count', text_auto=True,
-                      title="Monthly Popularity Count")
     figs = fill_month_insights(figs, 9, [f_month2])
 
     total_charts = len(figs)
